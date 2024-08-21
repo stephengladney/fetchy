@@ -1,0 +1,19 @@
+{
+  "name": "@gladknee/fetchy",
+  "version": "1.0.0",
+  "description": "A wrapper for JavaScript's fetch method that throws errors on 400 and 500 responses and accepts TypeScript generics for type-safe returns.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "fetch",
+    "api"
+  ],
+  "author": "Stephen Gladney",
+  "license": "ISC",
+  "devDependencies": {
+    "tsx": "^4.17.0",
+    "typescript": "^5.5.4"
+  }
+}
