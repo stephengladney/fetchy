@@ -12,11 +12,21 @@ fetchy.post(url, RequestInit?)
 fetchy.put(url, RequestInit?)
 fetchy.delete(url, RequestInit?)
 
+// Example of fetching a user from an API
+
+type User = { id: number; name: string }
+
+function greetUser(user: User) {
+  console.log(`Hello ${user.name}`)
+}
+
 async function exampleRequest() {
   try {
-    return await fetchy.get("https://server.com/api/route", {
+    const myUser = await fetchy.get<User>("https://server.com/api/users/me", {
       headers: { Authorization: "Bearer XXXXXX" },
     })
+
+    greetUser(myUser)
   } catch (e: any) {
     handleStatus(e, {
       401: (e) => { /* Do something if 401 response */},
@@ -25,5 +35,4 @@ async function exampleRequest() {
     })
   }
 }
-
 ```
