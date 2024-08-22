@@ -1,6 +1,6 @@
 # fetchy
 
-Fetchy is a wrapper for JavaScript's fetch method that automatically throws an error on 400-500 statuses and accepts generics for type-safe returns. It also includes a `handleStatus` method for
+Fetchy is a wrapper for JavaScript's fetch method that automatically throws an error on 400-500 statuses and accepts generics for type-safe returns. It also includes a `handleStatus` method for executing different callbacks to specific statuses.
 
 ## How to Use
 
@@ -29,8 +29,8 @@ async function exampleRequest() {
     greetUser(myUser)
   } catch (e: any) {
     handleStatus(e, {
-      401: (e) => { /* Do something if 401 response */},
-      500: (e) => { /* Do something if 500 response */},
+      401: (e) => { /* Do something if 401 response */ },
+      500: (e) => { /* Do something if 500 response */ },
       // ...etc
     })
   }
