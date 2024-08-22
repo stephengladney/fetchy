@@ -31,4 +31,14 @@ const fetchy = {
   },
 }
 
+export function handleStatus(
+  e: any,
+  callbacks?: { [key: number]: (e?: any) => void }
+) {
+  if (callbacks && callbacks[e.status]) {
+    const callback = callbacks[e.status]
+    return callback(e)
+  }
+}
+
 export default fetchy
