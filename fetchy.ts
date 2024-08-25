@@ -1,13 +1,14 @@
-type FetchyOptions = Omit<RequestInit, "method">
-
-function maybeThrowError(response: Response) {
-  if (response.status >= 400) throw response
+async function maybeThrowError(response: Response) {
+  if (!response.ok) {
+    const parsedResponse = await response.json()
+    throw parsedResponse
+  }
 }
 
 async function makeRequest<T>(
   url: string,
   method: "GET" | "PUT" | "POST" | "DELETE",
-  options?: FetchyOptions
+  options?: Omit<RequestInit, "method">
 ) {
   const response = await fetch(url, { ...options, method })
 
@@ -33,11 +34,16 @@ const fetchy = {
 
 export function handleStatus(
   e: any,
-  callbacks?: { [key: number]: (e?: any) => void }
+  callbacks?: { [key: number | string]: (e?: any) => void }
 ) {
   if (callbacks && callbacks[e.status]) {
     const callback = callbacks[e.status]
     return callback(e)
+  }
+
+  if (callbacks && callbacks["all"]) {
+    const callback = callbacks["all"]
+    callback(e)
   }
 }
 
