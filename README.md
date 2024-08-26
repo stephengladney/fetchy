@@ -7,13 +7,25 @@ Fetchy is a wrapper for JavaScript's fetch method that automatically throws an e
 ### Functions
 
 ```typescript
-function get<T>(url: string, options?: Omit<RequestInit, "method">): Promise<T>
+function get<T>(
+  url: string,
+  options?: Omit<RequestInit, "method">
+): Promise<T>
 
-function post<T>(url: string, options?: Omit<RequestInit, "method">): Promise<T>
+function post<T>(
+  url: string,
+  options?: Omit<RequestInit, "method">
+): Promise<T>
 
-function put<T>(url: string, options?: Omit<RequestInit, "method">): Promise<T>
+function put<T>(
+  url: string,
+  options?: Omit<RequestInit, "method">
+): Promise<T>
 
-function delete<T>(url: string, options?: Omit<RequestInit, "method">): Promise<T>
+function delete<T>(
+  url: string,
+  options?: Omit<RequestInit, "method">
+): Promise<T>
 
 function handleError(e: any, callbacks?: CallbackConfig)
 
