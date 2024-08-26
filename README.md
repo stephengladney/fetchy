@@ -38,6 +38,14 @@ type CallbackConfig = {
     [key: string | number]: (e?: any) => void
     all?: (e?: any) => void
   }
+  onFailure?: {
+    fetch?: (e?:any) => void
+    network?: (e?:any) => void
+    abort?: (e?:any) => void
+    security?: (e?:any) => void
+    syntax?: (e?:any) => void
+    all?: (e?:any) => void
+  }
 }
 ```
 

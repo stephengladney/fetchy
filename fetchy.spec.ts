@@ -42,9 +42,10 @@ describe("handleError", () => {
       await mockResponse({ error_message: "BAD_THING" })
     } catch (e: any) {
       handleError(e, {
-        error_message: {
-          BAD_THING: badThingCallback,
-          OTHER_BAD_THING: otherBadThingCallback,
+        field: {
+          error_message: (e, message) => {
+            if (message === "BAD_THING") badThingCallback()
+          },
         },
       })
     }
@@ -53,24 +54,116 @@ describe("handleError", () => {
     expect(otherBadThingCallback).not.toHaveBeenCalled()
   })
 
-  it("calls key.all callbacks", async () => {
-    const allThingCallback = jest.fn()
-    const badThingCallback = jest.fn()
-    const otherBadThingCallback = jest.fn()
+  it("calls onFailure.fetch callback", () => {
+    const fetchFailCallback = jest.fn()
     try {
-      await mockResponse({ error_message: "ANOTHER_BAD_THING" })
-    } catch (e: any) {
+      throw new TypeError("fetch failed")
+    } catch (e) {
       handleError(e, {
-        error_message: {
-          BAD_THING: badThingCallback,
-          OTHER_BAD_THING: otherBadThingCallback,
-          all: allThingCallback,
-        },
+        onFailure: { fetch: fetchFailCallback },
       })
     }
 
-    expect(allThingCallback).toHaveBeenCalled()
-    expect(badThingCallback).not.toHaveBeenCalled()
-    expect(otherBadThingCallback).not.toHaveBeenCalled()
+    expect(fetchFailCallback).toHaveBeenCalled()
+  })
+
+  it("calls onFailure.network callback", () => {
+    const networkFailCallback = jest.fn()
+    try {
+      throw new TypeError("Network error")
+    } catch (e) {
+      handleError(e, {
+        onFailure: { network: networkFailCallback },
+      })
+    }
+
+    expect(networkFailCallback).toHaveBeenCalled()
+  })
+
+  it("calls onFailure.abort callback", () => {
+    const abortCallback = jest.fn()
+    try {
+      throw new DOMException("abort")
+    } catch (e) {
+      handleError(e, {
+        onFailure: { abort: abortCallback },
+      })
+    }
+
+    expect(abortCallback).toHaveBeenCalled()
+  })
+
+  it("calls onFailure.security callback", () => {
+    const securityCallback = jest.fn()
+    try {
+      throw new DOMException("security")
+    } catch (e) {
+      handleError(e, {
+        onFailure: { security: securityCallback },
+      })
+    }
+
+    expect(securityCallback).toHaveBeenCalled()
+  })
+
+  it("calls onFailure.syntax callback", () => {
+    const syntaxFailureCallback = jest.fn()
+    try {
+      throw new SyntaxError("Unexpected token")
+    } catch (e) {
+      handleError(e, {
+        onFailure: { syntax: syntaxFailureCallback },
+      })
+    }
+
+    expect(syntaxFailureCallback).toHaveBeenCalled()
+  })
+
+  it("calls onFailure.all callback", () => {
+    const allFailureCallback = jest.fn()
+    try {
+      throw new DOMException("security")
+    } catch (e) {
+      handleError(e, {
+        onFailure: { all: allFailureCallback },
+      })
+    }
+
+    expect(allFailureCallback).toHaveBeenCalled()
+  })
+
+  it("does not call status or key/valuecallbacks on failure", () => {
+    const allFailureCallback = jest.fn()
+    const statusAllCallback = jest.fn()
+    const customAllCallback = jest.fn()
+    try {
+      throw new DOMException("security")
+    } catch (e) {
+      handleError(e, {
+        onFailure: { all: allFailureCallback },
+        status: { all: statusAllCallback },
+        field: { myKey: customAllCallback },
+      })
+    }
+
+    expect(allFailureCallback).toHaveBeenCalled()
+    expect(statusAllCallback).not.toHaveBeenCalled()
+    expect(customAllCallback).not.toHaveBeenCalled()
+  })
+
+  it("does not call onFailure callbacks on success", async () => {
+    const callback401 = jest.fn()
+    const fetchFailureCallback = jest.fn()
+    try {
+      await mockResponse({ status: 401 })
+    } catch (e: any) {
+      handleError(e, {
+        status: { 401: callback401 },
+        onFailure: { fetch: fetchFailureCallback },
+      })
+    }
+
+    expect(callback401).toHaveBeenCalled()
+    expect(fetchFailureCallback).not.toHaveBeenCalled()
   })
 })
