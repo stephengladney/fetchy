@@ -58,6 +58,53 @@ function greetUser(user: User) {
   console.log(`Hello ${user.name}`)
 }
 
+// Using status codes for error handling
+
+async function getUserAndGreet() {
+  try {
+    const myUser = await fetchy.get<User>("https://server.com/api/users/me", {
+      headers: { Authorization: "Bearer XXXXXX" },
+    })
+
+    greetUser(myUser)
+  } catch (e: any) {
+    handleError(e, {
+      status: {
+        401: (e) => { /* Do something if 401 response */ },
+        500: (e) => { /* Do something if 500 response */ },
+        all: (e) => { /* Do something on any non 200-300 status */ }
+      },
+    })
+  }
+}
+
+// Using a custom key/value response for error handling
+
+async function getUserAndGreet() {
+  try {
+    const myUser = await fetchy.get<User>("https://server.com/api/users/me", {
+      headers: { Authorization: "Bearer XXXXXX" },
+    })
+
+    greetUser(myUser)
+  } catch (e: any) {
+    handleError(e, {
+      errorMessage: {
+        USER_NOT_ACTIVE: (e) => {
+          /* Do something if error response includes { errorMessage: "USER_NOT_ACTIVE" */
+        },
+        all: (e) => {
+          /* Do something if error response includes { errorMessage: <anything> } */
+        }
+      },
+    })
+  }
+}
+
+// You can also use both if desired
+
+// NOTE: If a status code and custom/key value condition overlap, both callbacks will be executed.
+
 async function getUserAndGreet() {
   try {
     const myUser = await fetchy.get<User>("https://server.com/api/users/me", {
