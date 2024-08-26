@@ -18,8 +18,8 @@ try {
 
 } catch (e:any) {
     handleError(e, {
-    status?: { [number]: (e?) => {} },
-    customKey?: { [string]: (e?) => {}}
+    status?: { [number]: (e?) => {}, all?: (e?) => {} },
+    customKey?: { [string]: (e?) => {}, all?: (e?) => {}}
   })
 }
 
@@ -55,8 +55,11 @@ async function getUserAndGreet() {
     handleError(e, {
       errorMessage: {
         USER_NOT_ACTIVE: (e) => {
-          /* Do something if response includes { errorMessage: "USER_NOT_ACTIVE"} */
+          /* Do something if error response includes { errorMessage: "USER_NOT_ACTIVE" } */
         },
+        all: (e) => {
+          /* Do something if error response includes { errorMessage: <anything> } */
+        }
       },
       status: {
         401: (e) => {
@@ -65,6 +68,9 @@ async function getUserAndGreet() {
         500: (e) => {
           /* Do something if 500 response */
         },
+        all: (e) => {
+          /* Do something on any non 200-300 status */
+        }
       },
       // ...etc
     })

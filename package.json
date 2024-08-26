@@ -1,11 +1,11 @@
 {
   "name": "@gladknee/fetchy",
-  "version": "1.0.7",
+  "version": "1.0.8",
   "description": "A wrapper for fetch that provides type-safe returns and custom error handling",
   "main": "dist/fetchy.js",
   "types": "dist/fetchy.d.ts",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "jest"
   },
   "keywords": [
     "fetch",
@@ -18,6 +18,9 @@
   "author": "Stephen Gladney",
   "license": "ISC",
   "devDependencies": {
+    "@types/jest": "^29.5.12",
+    "jest": "^29.7.0",
+    "ts-jest": "^29.2.5",
     "tsx": "^4.17.0",
     "typescript": "^5.5.4"
   }
