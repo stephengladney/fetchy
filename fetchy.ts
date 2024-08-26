@@ -120,7 +120,7 @@ export function handleError(e: any, callbacks: CallbackConfig) {
 
   // Handle specific status errors
 
-  if (callbacks.status && callbacks.status[e.status]) {
+  if (e.status && callbacks.status && callbacks.status[e.status]) {
     const callback = callbacks.status[e.status]
     callback(e)
   }
@@ -128,6 +128,7 @@ export function handleError(e: any, callbacks: CallbackConfig) {
   // Handle other status errors
 
   if (
+    e.status &&
     callbacks.status &&
     !callbacks.status[e.status] &&
     callbacks.status.other
@@ -138,7 +139,7 @@ export function handleError(e: any, callbacks: CallbackConfig) {
 
   // Handle all status errors
 
-  if (callbacks.status && callbacks.status.all) {
+  if (e.status && callbacks.status && callbacks.status.all) {
     const callback = callbacks.status.all
     callback(e)
   }
