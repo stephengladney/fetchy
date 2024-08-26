@@ -126,7 +126,7 @@ async function getUserAndGreet() {
   } catch (e: any) {
     handleError(e, {
       field: {
-        errorMessage: (e, value: any) => {
+        errorMessage: (e, value) => {
           switch (value) {
             case "USER_NOT_ACTIVE":
               // Do something if response includes { errorMessage: "USER_NOT_ACTIVE "}
@@ -167,7 +167,7 @@ async function getUserAndGreet() {
         },
       },
       field: {
-        errorMessage: (e, value: any) => {
+        errorMessage: (e, value) => {
           switch (value) {
             case "USER_NOT_ACTIVE":
               // Do something if response includes { errorMessage: "USER_NOT_ACTIVE "}
