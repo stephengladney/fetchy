@@ -1,6 +1,6 @@
 # fetchy
 
-Fetchy is a wrapper for JavaScript's fetch method that automatically throws an error on non 200-300 statuses and accepts generics for type-safe returns. It also includes a `handleError` method for executing different callbacks to specific error status and responses.
+Fetchy is a wrapper for JavaScript's fetch method that automatically throws an error on non 200-300 statuses and accepts generics for type-safe returns. It also includes a `handleError` method for executing different callbacks to specific error statuses and responses.
 
 ## How to Use
 
