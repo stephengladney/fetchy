@@ -56,7 +56,7 @@ type CallbackConfig = {
 export function handleError(e: any, callbacks: CallbackConfig) {
   // Handle non-server errors
 
-  if (callbacks && callbacks["onFailure"]) {
+  if (callbacks["onFailure"]) {
     const allFailureCallback = callbacks["onFailure"]["all"]
 
     // Handle specific TypeErrors
