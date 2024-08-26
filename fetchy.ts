@@ -1,9 +1,9 @@
 async function maybeThrowError(response: Response) {
-  if (response.ok) return
+  if (response.ok) return await response.json()
 
   if (response.headers.get("content-type")?.includes("json")) {
     const parsedResponse = await response.json()
-    throw parsedResponse
+    throw { status: response.status, ...parsedResponse }
   } else {
     throw response
   }
@@ -16,9 +16,7 @@ async function makeRequest<T>(
 ) {
   const response = await fetch(url, { ...options, method })
 
-  maybeThrowError(response)
-
-  return (await response.json()) as T
+  await maybeThrowError(response)
 }
 
 const fetchy = {
@@ -36,19 +34,23 @@ const fetchy = {
   },
 }
 
-export function handleStatus(
+export function handleError(
   e: any,
-  callbacks?: { [key: number | string]: (e?: any) => void }
+  callbacks?: {
+    [key: string]: { [key: number | string]: (e?: any) => void }
+  }
 ) {
-  if (callbacks && callbacks[e.status]) {
-    const callback = callbacks[e.status]
-    return callback(e)
-  }
+  Object.keys(callbacks ?? {}).forEach((key) => {
+    if (e[key] && callbacks && callbacks[key][e[key]]) {
+      const callback = callbacks[key][e[key]]
+      callback(e)
+    }
 
-  if (callbacks && callbacks["all"]) {
-    const callback = callbacks["all"]
-    callback(e)
-  }
+    if (e[key] && callbacks && callbacks[key] && callbacks[key]["all"]) {
+      const callback = callbacks[key]["all"]
+      callback(e)
+    }
+  })
 }
 
 export default fetchy
