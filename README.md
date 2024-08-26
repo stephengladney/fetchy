@@ -32,13 +32,11 @@ function handleError(e: any, callbacks?: CallbackConfig)
 type CallbackConfig = {
   status?: {
     [key: number]: (e?: any) => void
-    other?: (e?:any) => void
+    other?: (e?: any) => void
     all?: (e?: any) => void
   }
   field?: {
-    [key: string | number]: {
-      [key: string | number | "all"]: (e?: any, value?: any) => void
-    }
+    [key: string | number]: (e?: any, value?: any) => void
   }
   onFailure?: {
     fetch?: (e?: any) => void
