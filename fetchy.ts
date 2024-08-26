@@ -1,8 +1,8 @@
-async function maybeThrowError(response: Response) {
+async function maybeThrowError<T>(response: Response) {
   if (response.ok) {
     return response.headers.get("content-type")?.includes("json")
-      ? { ...response, data: await response.json() }
-      : response
+      ? { ...response, data: (await response.json()) as T }
+      : { ...response, data: null }
   }
 
   if (response.headers.get("content-type")?.includes("json")) {
@@ -20,7 +20,7 @@ async function makeRequest<T>(
 ) {
   const response = await fetch(url, { ...options, method })
 
-  return await maybeThrowError(response)
+  return await maybeThrowError<T>(response)
 }
 
 const fetchy = {
