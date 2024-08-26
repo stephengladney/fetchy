@@ -87,23 +87,19 @@ export function handleError(e: any, callbacks: CallbackConfig) {
 
     // Handle specific DOMExceptions
 
-    if (e instanceof DOMException) {
-      let callback: (e?: any) => void = () => {}
+    let callback: (e?: any) => void = () => {}
 
-      const abortCallback = callbacks["onFailure"]["abort"]
-      const securityCallback = callbacks["onFailure"]["security"]
+    const abortCallback = callbacks["onFailure"]["abort"]
+    const securityCallback = callbacks["onFailure"]["security"]
 
-      const { message } = e
-
-      if (message.toLowerCase().includes("abort") && !!abortCallback) {
-        callback = abortCallback
-      }
-
-      if (message.toLowerCase().includes("security") && !!securityCallback) {
-        callback = securityCallback
-      }
-      callback(e)
+    if (e.message?.toLowerCase().includes("abort") && !!abortCallback) {
+      callback = abortCallback
     }
+
+    if (e.message?.toLowerCase().includes("security") && !!securityCallback) {
+      callback = securityCallback
+    }
+    callback(e)
 
     // Handle SyntaxErrors
 
