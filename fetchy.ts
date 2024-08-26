@@ -146,7 +146,7 @@ export function handleError(e: any, callbacks: CallbackConfig) {
 
   // Handle any custom field server errors
 
-  Object.keys(callbacks.field ?? {}).forEach((key) => {
+  Object.keys(e).forEach((key) => {
     if (key !== "status" && callbacks.field && callbacks.field[key]) {
       const callback = callbacks.field[key]
       callback(e, e[key])
