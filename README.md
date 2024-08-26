@@ -17,10 +17,18 @@ try {
   fetchy.delete(url, RequestInit?)
 
 } catch (e:any) {
-    handleError(e, {
-    status?: { [number]: (e?) => {}, all?: (e?) => {} },
-    customKey?: { [string | number]: (e?) => {}, all?: (e?) => {}}
+
+  handleError(e, {
+    status?: {
+      [number]: (e?) => {},
+      all?: (e?) => {}
+    },
+    customKey?: {
+      [string | number]: (e?) => {},
+      all?: (e?) => {}
+    }
   })
+
 }
 
 // .then/.catch
@@ -30,8 +38,14 @@ fetchy
   .then((response) => {})
   .catch((e) =>
     handleError(e, {
-      status: { [number]: (e) => {} },
-      customKey: { [string | number]: (e) => {} },
+      status?: {
+        [number]: (e?) => {},
+        all?: (e?) => {}
+      },
+      customKey?: {
+        [string | number]: (e?) => {},
+        all?: (e?) => {}
+      }
     })
   )
 
@@ -55,22 +69,15 @@ async function getUserAndGreet() {
     handleError(e, {
       errorMessage: {
         USER_NOT_ACTIVE: (e) => {
-          /* Do something if error response includes { errorMessage: "USER_NOT_ACTIVE" } */
-        },
+          /* Do something if error response includes { errorMessage: "USER_NOT_ACTIVE" */ },
         all: (e) => {
           /* Do something if error response includes { errorMessage: <anything> } */
         }
       },
       status: {
-        401: (e) => {
-          /* Do something if 401 response */
-        },
-        500: (e) => {
-          /* Do something if 500 response */
-        },
-        all: (e) => {
-          /* Do something on any non 200-300 status */
-        }
+        401: (e) => { /* Do something if 401 response */ },
+        500: (e) => { /* Do something if 500 response */ },
+        all: (e) => { /* Do something on any non 200-300 status */ }
       },
     })
   }
