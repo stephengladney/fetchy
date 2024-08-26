@@ -19,19 +19,19 @@ try {
 } catch (e:any) {
     handleError(e, {
     status?: { [number]: (e?) => {}, all?: (e?) => {} },
-    customKey?: { [string]: (e?) => {}, all?: (e?) => {}}
+    customKey?: { [string | number]: (e?) => {}, all?: (e?) => {}}
   })
 }
 
 // .then/.catch
 
 fetchy
-  .get("url", {})
+  .get(url, RequestInit?)
   .then((response) => {})
   .catch((e) =>
     handleError(e, {
       status: { [number]: (e) => {} },
-      customKey: { [string]: (e) => {} },
+      customKey: { [string | number]: (e) => {} },
     })
   )
 
@@ -72,7 +72,6 @@ async function getUserAndGreet() {
           /* Do something on any non 200-300 status */
         }
       },
-      // ...etc
     })
   }
 }
