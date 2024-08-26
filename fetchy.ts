@@ -81,27 +81,24 @@ export function handleError(e: any, callbacks: CallbackConfig) {
         callback = networkFailCallback
       }
       callback(e)
-
-      if (!!allFailureCallback) allFailureCallback(e)
     }
 
     // Handle specific DOMExceptions
 
-    if (e instanceof DOMException) {
-      let callback: (e?: any) => void = () => {}
+    const isDOMExceptionError =
+      e.message?.toLowerCase().includes("abort") ||
+      e.message?.toLowerCase().includes("security")
 
-      const abortCallback = callbacks["onFailure"]["abort"]
-      const securityCallback = callbacks["onFailure"]["security"]
+    const abortCallback = callbacks["onFailure"]["abort"]
+    const securityCallback = callbacks["onFailure"]["security"]
 
-      const { message } = e
+    if (e.message?.toLowerCase().includes("abort") && !!abortCallback) {
+      const callback = abortCallback
+      callback(e)
+    }
 
-      if (message.toLowerCase().includes("abort") && !!abortCallback) {
-        callback = abortCallback
-      }
-
-      if (message.toLowerCase().includes("security") && !!securityCallback) {
-        callback = securityCallback
-      }
+    if (e.message?.toLowerCase().includes("security") && !!securityCallback) {
+      const callback = securityCallback
       callback(e)
     }
 
@@ -114,7 +111,7 @@ export function handleError(e: any, callbacks: CallbackConfig) {
 
     if (
       (e instanceof TypeError ||
-        e instanceof DOMException ||
+        isDOMExceptionError ||
         e instanceof SyntaxError) &&
       !!allFailureCallback
     ) {
