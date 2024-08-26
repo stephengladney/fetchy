@@ -32,19 +32,21 @@ function handleError(e: any, callbacks?: CallbackConfig)
 type CallbackConfig = {
   status?: {
     [key: number]: (e?: any) => void
+    other?: (e?:any) => void
     all?: (e?: any) => void
   }
-  customKey?: {
-    [key: string | number]: (e?: any) => void
-    all?: (e?: any) => void
+  field?: {
+    [key: string | number]: {
+      [key: string | number | "all"]: (e?: any, value?: any) => void
+    }
   }
   onFailure?: {
-    fetch?: (e?:any) => void
-    network?: (e?:any) => void
-    abort?: (e?:any) => void
-    security?: (e?:any) => void
-    syntax?: (e?:any) => void
-    all?: (e?:any) => void
+    fetch?: (e?: any) => void
+    network?: (e?: any) => void
+    abort?: (e?: any) => void
+    security?: (e?: any) => void
+    syntax?: (e?: any) => void
+    all?: (e?: any) => void
   }
 }
 ```
@@ -101,6 +103,9 @@ async function getUserAndGreet() {
         500: (e) => {
           /* Do something if 500 response */
         },
+        other: (e) => {
+          /* Do something on any other non 200-300 statuses */
+        },
         all: (e) => {
           /* Do something on any non 200-300 status */
         },
@@ -122,15 +127,18 @@ async function getUserAndGreet() {
     greetUser(myUser)
   } catch (e: any) {
     handleError(e, {
-      errorMessage: {
-        USER_NOT_ACTIVE: (e) => {
-          /* Do something if error response includes { errorMessage: "USER_NOT_ACTIVE" */
-        },
-        USER_NOT_FOUND: (e) => {
-          /* Do something if error response includes { errorMessage: "USER_NOT_FOUND" */
-        },
-        all: (e) => {
-          /* Do something if error response includes { errorMessage: <anything> } */
+      field: {
+        errorMessage: (e, value: any) => {
+          switch (value) {
+            case "USER_NOT_ACTIVE":
+              // Do something if response includes { errorMessage: "USER_NOT_ACTIVE "}
+              break
+            case "USER_NOT_FOUND":
+              // Do something if response includes { errorMessage: "USER_NOT_FOUND "}
+              break
+            default:
+            // Do something if response includes { errorMessage: <anything else> }
+          }
         },
       },
     })
@@ -152,14 +160,6 @@ async function getUserAndGreet() {
     greetUser(myUser)
   } catch (e: any) {
     handleError(e, {
-      errorMessage: {
-        USER_NOT_ACTIVE: (e) => {
-          /* Do something if error response includes { errorMessage: "USER_NOT_ACTIVE" */
-        },
-        all: (e) => {
-          /* Do something if error response includes { errorMessage: <anything> } */
-        },
-      },
       status: {
         401: (e) => {
           /* Do something if 401 response */
@@ -167,8 +167,19 @@ async function getUserAndGreet() {
         500: (e) => {
           /* Do something if 500 response */
         },
-        all: (e) => {
-          /* Do something on any non 200-300 status */
+      },
+      field: {
+        errorMessage: (e, value: any) => {
+          switch (value) {
+            case "USER_NOT_ACTIVE":
+              // Do something if response includes { errorMessage: "USER_NOT_ACTIVE "}
+              break
+            case "USER_NOT_FOUND":
+              // Do something if response includes { errorMessage: "USER_NOT_FOUND "}
+              break
+            default:
+            // Do something if response includes { errorMessage: <anything else> }
+          }
         },
       },
     })

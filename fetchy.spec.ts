@@ -18,6 +18,19 @@ describe("handleError", () => {
     expect(callback409).not.toHaveBeenCalled()
   })
 
+  it("calls status.other callbacks", async () => {
+    const callback401 = jest.fn()
+    const otherCallback = jest.fn()
+    try {
+      await mockResponse({ status: 500 })
+    } catch (e: any) {
+      handleError(e, { status: { 401: callback401, other: otherCallback } })
+    }
+
+    expect(callback401).not.toHaveBeenCalled()
+    expect(otherCallback).toHaveBeenCalled()
+  })
+
   it("calls status.all callbacks", async () => {
     const callback401 = jest.fn()
     const callback409 = jest.fn()
@@ -39,18 +52,19 @@ describe("handleError", () => {
     const badThingCallback = jest.fn()
     const otherBadThingCallback = jest.fn()
     try {
-      await mockResponse({ error_message: "BAD_THING" })
+      await mockResponse({ status: 500, error_message: "BAD_THING" })
     } catch (e: any) {
       handleError(e, {
         field: {
-          error_message: (e, message) => {
-            if (message === "BAD_THING") badThingCallback()
-          },
+          error_message: badThingCallback,
         },
       })
     }
 
-    expect(badThingCallback).toHaveBeenCalled()
+    expect(badThingCallback).toHaveBeenCalledWith(
+      { status: 500, error_message: "BAD_THING" },
+      "BAD_THING"
+    )
     expect(otherBadThingCallback).not.toHaveBeenCalled()
   })
 

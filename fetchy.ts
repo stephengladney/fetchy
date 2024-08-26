@@ -37,10 +37,11 @@ const fetchy = {
 type CallbackConfig = {
   status?: {
     [key: number]: (e?: any) => void
+    other?: (e?: any) => void
     all?: (e?: any) => void
   }
   field?: {
-    [key: string | number | "all"]: (e?: any, value?: any) => void
+    [key: string | number]: (e?: any, value?: any) => void
   }
   onFailure?: {
     fetch?: (e?: any) => void
@@ -124,6 +125,17 @@ export function handleError(e: any, callbacks: CallbackConfig) {
     callback(e)
   }
 
+  // Handle other status errors
+
+  if (
+    callbacks.status &&
+    !callbacks.status[e.status] &&
+    callbacks.status.other
+  ) {
+    const callback = callbacks.status.other
+    callback(e)
+  }
+
   // Handle all status errors
 
   if (callbacks.status && callbacks.status.all) {
@@ -134,12 +146,7 @@ export function handleError(e: any, callbacks: CallbackConfig) {
   // Handle any custom field server errors
 
   Object.keys(callbacks.field ?? {}).forEach((key) => {
-    if (
-      e[key] &&
-      callbacks.field &&
-      callbacks.field[key] &&
-      !!callbacks.field[key]
-    ) {
+    if (key !== "status" && callbacks.field && callbacks.field[key]) {
       const callback = callbacks.field[key]
       callback(e, e[key])
     }
