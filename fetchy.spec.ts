@@ -1,4 +1,4 @@
-import fetchy, { handleError } from "./fetchy"
+import { handleError } from "./fetchy"
 
 async function mockResponse(body: any) {
   return new Promise((_, reject) => reject(body))
