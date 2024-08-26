@@ -1,7 +1,11 @@
 async function maybeThrowError(response: Response) {
-  if (!response.ok) {
+  if (response.ok) return
+
+  if (response.headers.get("content-type")?.includes("json")) {
     const parsedResponse = await response.json()
     throw parsedResponse
+  } else {
+    throw response
   }
 }
 
