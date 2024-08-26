@@ -1,18 +1,42 @@
 # fetchy
 
-Fetchy is a wrapper for JavaScript's fetch method that automatically throws an error on 400-500 statuses and accepts generics for type-safe returns. It also includes a `handleStatus` method for executing different callbacks to specific statuses.
+Fetchy is a wrapper for JavaScript's fetch method that automatically throws an error on 400-500 statuses and accepts generics for type-safe returns. It also includes a `handleError` method for executing different callbacks to specific statuses.
 
 ## How to Use
 
 ```typescript
-import fetchy, { handleStatus } from "@gladknee/fetchy"
+import fetchy, { handleError } from "@gladknee/fetchy"
 
-fetchy.get(url, RequestInit?)
-fetchy.post(url, RequestInit?)
-fetchy.put(url, RequestInit?)
-fetchy.delete(url, RequestInit?)
+// Try/catch
 
-// Example of fetching a user from an API
+try {
+
+  fetchy.get(url, RequestInit?)
+  fetchy.post(url, RequestInit?)
+  fetchy.put(url, RequestInit?)
+  fetchy.delete(url, RequestInit?)
+
+} catch (e:any) {
+    handleError(e, {
+    status?: { [number]: (e?) => {} },
+    customKey?: { [string]: (e?) => {}}
+  })
+}
+
+// .then/.catch
+
+fetchy
+  .get("url", {})
+  .then((response) => {})
+  .catch((e) =>
+    handleError(e, {
+      status: { [number]: (e) => {} },
+      customKey: { [string]: (e) => {} },
+    })
+  )
+
+
+// Example
 
 type User = { id: number; name: string }
 
@@ -20,7 +44,7 @@ function greetUser(user: User) {
   console.log(`Hello ${user.name}`)
 }
 
-async function exampleRequest() {
+async function getUserAndGreet() {
   try {
     const myUser = await fetchy.get<User>("https://server.com/api/users/me", {
       headers: { Authorization: "Bearer XXXXXX" },
@@ -28,9 +52,20 @@ async function exampleRequest() {
 
     greetUser(myUser)
   } catch (e: any) {
-    handleStatus(e, {
-      401: (e) => { /* Do something if 401 response */ },
-      500: (e) => { /* Do something if 500 response */ },
+    handleError(e, {
+      errorMessage: {
+        USER_NOT_ACTIVE: (e) => {
+          /* Do something if response includes { errorMessage: "USER_NOT_ACTIVE"} */
+        },
+      },
+      status: {
+        401: (e) => {
+          /* Do something if 401 response */
+        },
+        500: (e) => {
+          /* Do something if 500 response */
+        },
+      },
       // ...etc
     })
   }
