@@ -24,16 +24,19 @@ async function makeRequest<T>(
 }
 
 const fetchy = {
-  get: async <T>(url: string, options?: Omit<RequestInit, "method">) => {
+  get: async <T = any>(url: string, options?: Omit<RequestInit, "method">) => {
     return makeRequest<T>(url, "GET", options)
   },
-  put: async <T>(url: string, options?: Omit<RequestInit, "method">) => {
+  put: async <T = any>(url: string, options?: Omit<RequestInit, "method">) => {
     return makeRequest<T>(url, "PUT", options)
   },
-  post: async <T>(url: string, options?: Omit<RequestInit, "method">) => {
+  post: async <T = any>(url: string, options?: Omit<RequestInit, "method">) => {
     return makeRequest<T>(url, "POST", options)
   },
-  delete: async <T>(url: string, options?: Omit<RequestInit, "method">) => {
+  delete: async <T = any>(
+    url: string,
+    options?: Omit<RequestInit, "method">
+  ) => {
     return makeRequest<T>(url, "DELETE", options)
   },
 }

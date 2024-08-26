@@ -1,6 +1,6 @@
 {
   "name": "@gladknee/fetchy",
-  "version": "1.1.4",
+  "version": "1.1.5",
   "description": "A zero dependency wrapper for fetch that provides type-safe returns and custom error handling",
   "main": "dist/fetchy.js",
   "types": "dist/fetchy.d.ts",
