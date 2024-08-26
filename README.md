@@ -69,7 +69,8 @@ async function getUserAndGreet() {
     handleError(e, {
       errorMessage: {
         USER_NOT_ACTIVE: (e) => {
-          /* Do something if error response includes { errorMessage: "USER_NOT_ACTIVE" */ },
+          /* Do something if error response includes { errorMessage: "USER_NOT_ACTIVE" */
+        },
         all: (e) => {
           /* Do something if error response includes { errorMessage: <anything> } */
         }
