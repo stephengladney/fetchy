@@ -55,7 +55,7 @@ describe("handleError", () => {
       await mockResponse({ status: 500, error_message: "BAD_THING" })
     } catch (e: any) {
       handleError(e, {
-        field: {
+        body: {
           error_message: badThingCallback,
         },
       })
@@ -68,85 +68,85 @@ describe("handleError", () => {
     expect(otherBadThingCallback).not.toHaveBeenCalled()
   })
 
-  it("calls onFailure.fetch callback", () => {
+  it("calls client.fetch callback", () => {
     const fetchFailCallback = jest.fn()
     try {
       throw new TypeError("fetch failed")
     } catch (e) {
       handleError(e, {
-        onFailure: { fetch: fetchFailCallback },
+        client: { fetch: fetchFailCallback },
       })
     }
 
     expect(fetchFailCallback).toHaveBeenCalled()
   })
 
-  it("calls onFailure.network callback", () => {
+  it("calls client.network callback", () => {
     const networkFailCallback = jest.fn()
     try {
       throw new TypeError("Network error")
     } catch (e) {
       handleError(e, {
-        onFailure: { network: networkFailCallback },
+        client: { network: networkFailCallback },
       })
     }
 
     expect(networkFailCallback).toHaveBeenCalled()
   })
 
-  it("calls onFailure.abort callback", () => {
+  it("calls client.abort callback", () => {
     const abortCallback = jest.fn()
     try {
       throw new DOMException("abort")
     } catch (e) {
       handleError(e, {
-        onFailure: { abort: abortCallback },
+        client: { abort: abortCallback },
       })
     }
 
     expect(abortCallback).toHaveBeenCalled()
   })
 
-  it("calls onFailure.security callback", () => {
+  it("calls client.security callback", () => {
     const securityCallback = jest.fn()
     try {
       throw new DOMException("security")
     } catch (e) {
       handleError(e, {
-        onFailure: { security: securityCallback },
+        client: { security: securityCallback },
       })
     }
 
     expect(securityCallback).toHaveBeenCalled()
   })
 
-  it("calls onFailure.syntax callback", () => {
+  it("calls client.syntax callback", () => {
     const syntaxFailureCallback = jest.fn()
     try {
       throw new SyntaxError("Unexpected token")
     } catch (e) {
       handleError(e, {
-        onFailure: { syntax: syntaxFailureCallback },
+        client: { syntax: syntaxFailureCallback },
       })
     }
 
     expect(syntaxFailureCallback).toHaveBeenCalled()
   })
 
-  it("calls onFailure.all callback", () => {
+  it("calls client.all callback", () => {
     const allFailureCallback = jest.fn()
     try {
       throw new DOMException("security")
     } catch (e) {
       handleError(e, {
-        onFailure: { all: allFailureCallback },
+        client: { all: allFailureCallback },
       })
     }
 
     expect(allFailureCallback).toHaveBeenCalled()
   })
 
-  it("does not call onFailure callbacks on success", async () => {
+  it("does not call client callbacks on success", async () => {
     const callback401 = jest.fn()
     const fetchFailureCallback = jest.fn()
     try {
@@ -154,7 +154,7 @@ describe("handleError", () => {
     } catch (e: any) {
       handleError(e, {
         status: { 401: callback401 },
-        onFailure: { fetch: fetchFailureCallback },
+        client: { fetch: fetchFailureCallback },
       })
     }
 
@@ -173,8 +173,8 @@ describe("handleError", () => {
     } catch (e) {
       handleError(e, {
         status: { 401: callback401 },
-        field: { fieldName: callbackField },
-        onFailure: { fetch: callbackFailed },
+        body: { fieldName: callbackField },
+        client: { fetch: callbackFailed },
         other: otherCallback,
       })
     }
@@ -212,8 +212,8 @@ describe("handleError", () => {
     } catch (e) {
       handleError(e, {
         status: { 401: callback401 },
-        field: { fieldName: callbackField },
-        onFailure: { fetch: callbackFailed },
+        body: { fieldName: callbackField },
+        client: { fetch: callbackFailed },
         other: otherCallback,
       })
     }

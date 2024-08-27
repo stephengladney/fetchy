@@ -1,33 +1,61 @@
 # fetchy
 
-Fetchy is a wrapper for JavaScript's fetch method that automatically throws an error on non 200-300 statuses and accepts TypeScript generics for type-safe returns. It also includes a `handleError` method for executing different callbacks to specific error statuses and responses.
+Fetchy is a zero dependency wrapper for JavaScript's fetch method that automatically throws an error on non 200-300 statuses and accepts TypeScript generics for type-safe returns. It also provides error handling that allows you to easily execute different callbacks for different types of errors.
 
-## Docmentation
+## Documentation
 
-### Functions
+### Quick Start
+
+1. Install the package with `npm i @gladknee/fetchy`
+2. Import the default fetchy export from the library.
+3. The fetchy object provides four functions for making requests: `get`, `post`, `put`, `delete`.
+4. A successful request returns a native `Response` with additional keys of `data` and `text`, which contain any parsed JSON or decoded text respectively.
 
 ```typescript
-function get<T>(
+import fetchy from "@gladknee/fetchy"
+
+// async await method
+
+async function yourFunction() {
+  try {
+    const { data } = await fetchy.get("https://server.com/api/endpoint")
+  } catch (e) {}
+}
+
+// Chaining method
+
+fetchy
+  .get("https://server.com/api/endpoint")
+  .then(({ data }) => {})
+  .catch((e: any) => {})
+```
+
+### Definitions
+
+```typescript
+type FetchyResponse<T = any> = Response & { data: T; text: string }
+
+function get<T = any>(
   url: string,
   options?: Omit<RequestInit, "method">
-): Promise<T>
+): Promise<FetchyResponse<T>>
 
-function post<T>(
+function post<T = any>(
   url: string,
   options?: Omit<RequestInit, "method">
-): Promise<T>
+): Promise<FetchyResponse<T>>
 
-function put<T>(
+function put<T = any>(
   url: string,
   options?: Omit<RequestInit, "method">
-): Promise<T>
+): Promise<FetchyResponse<T>>
 
-function delete<T>(
+function delete<T = any>(
   url: string,
   options?: Omit<RequestInit, "method">
-): Promise<T>
+): Promise<FetchyResponse<T>>
 
-function handleError(e: any, callbacks?: CallbackConfig)
+function handleError(e: any, callbacks: CallbackConfig)
 
 type CallbackConfig = {
   status?: {
@@ -35,10 +63,10 @@ type CallbackConfig = {
     other?: (e?: any) => void
     all?: (e?: any) => void
   }
-  field?: {
+  body?: {
     [key: string | number]: (e?: any, value?: any) => void
   }
-  onFailure?: {
+  client?: {
     fetch?: (e?: any) => void
     network?: (e?: any) => void
     abort?: (e?: any) => void
@@ -46,50 +74,53 @@ type CallbackConfig = {
     syntax?: (e?: any) => void
     all?: (e?: any) => void
   }
+  other?: (e?: any) => void
+  all?: (e?: any) => void
 }
 ```
 
-### How to Use
+### Examples
+
+We have a `User` type and `greetUser()` function that accepts a User. We'll make a GET request to fetch the user and pass it to the greetUser function.
 
 ```typescript
-import fetchy, { handleError } from "@gladknee/fetchy"
-
-// Try/catch
-
-try {
-  const result = await fetchy.get<T>(url, options)
-} catch (e: any) {
-  handleError(e, callbackConfig)
-}
-
-// .then/.catch
-
-fetchy
-  .get<T>(url, options)
-  .then((response: T) => {})
-  .catch((e) => handleError(e, callbackConfig))
-```
-
-### Example
-
-```typescript
-// We have a User type and greetUser function that accepts a User
-
 type User = { id: number; name: string }
 
 function greetUser(user: User) {
   alert(`Hello ${user.name}`)
 }
+
+async function getAndGreetUser() {
+  const { data: myUser } = await fetchy.get<User>(
+    "https://server.com/api/users/me",
+    {
+      headers: { Authorization: "Bearer XXXXXX" },
+    }
+  )
+
+  greetUser(myUser)
+}
 ```
 
-Using status codes for error handling:
+### Error Handling
+
+Import the `handleError` function from the library
+
+```typescript
+import fetchy, { handleError } from "@gladknee/fetchy"
+```
+
+#### Handling status codes
 
 ```typescript
 async function getUserAndGreet() {
   try {
-    const myUser = await fetchy.get<User>("https://server.com/api/users/me", {
-      headers: { Authorization: "Bearer XXXXXX" },
-    })
+    const { data: myUser } = await fetchy.get<User>(
+      "https://server.com/api/users/me",
+      {
+        headers: { Authorization: "Bearer XXXXXX" },
+      }
+    )
 
     greetUser(myUser)
   } catch (e: any) {
@@ -113,19 +144,22 @@ async function getUserAndGreet() {
 }
 ```
 
-Using a custom key/value response for error handling:
+#### Handling response body
 
 ```typescript
 async function getUserAndGreet() {
   try {
-    const myUser = await fetchy.get<User>("https://server.com/api/users/me", {
-      headers: { Authorization: "Bearer XXXXXX" },
-    })
+    const { data: myUser } = await fetchy.get<User>(
+      "https://server.com/api/users/me",
+      {
+        headers: { Authorization: "Bearer XXXXXX" },
+      }
+    )
 
     greetUser(myUser)
   } catch (e: any) {
     handleError(e, {
-      field: {
+      body: {
         errorMessage: (e, value) => {
           switch (value) {
             case "USER_NOT_ACTIVE":
@@ -144,16 +178,57 @@ async function getUserAndGreet() {
 }
 ```
 
-Using both status code and custom key/value for error handling:
-
-_NOTE: If a status code and custom/key value condition overlap, both callbacks will be executed._
+#### Handling client-side errors
 
 ```typescript
 async function getUserAndGreet() {
   try {
-    const myUser = await fetchy.get<User>("https://server.com/api/users/me", {
-      headers: { Authorization: "Bearer XXXXXX" },
+    const { data: myUser } = await fetchy.get<User>(
+      "https://server.com/api/users/me",
+      {
+        headers: { Authorization: "Bearer XXXXXX" },
+      }
+    )
+
+    greetUser(myUser)
+  } catch (e: any) {
+    handleError(e, {
+      client: {
+        fetch: (e) => {
+          /* Do something if fetch failed */
+        },
+        network: (e) => {
+          /* Do something if network error */
+        },
+        abort: (e) => {
+          /* Do something if user aborted */
+        },
+        security: (e) => {
+          /* Do something if security error */
+        },
+        syntax: (e) => {
+          /* Do something if syntax error */
+        },
+        all: (e) => {
+          /* Do something if any client-side error */
+        },
+      },
     })
+  }
+}
+```
+
+#### Handling any other errors
+
+```typescript
+async function getUserAndGreet() {
+  try {
+    const { data: myUser } = await fetchy.get<User>(
+      "https://server.com/api/users/me",
+      {
+        headers: { Authorization: "Bearer XXXXXX" },
+      }
+    )
 
     greetUser(myUser)
   } catch (e: any) {
@@ -161,25 +236,74 @@ async function getUserAndGreet() {
       status: {
         401: (e) => {
           /* Do something if 401 response */
-        },
-        500: (e) => {
-          /* Do something if 500 response */
-        },
+        }
+      }
+      other: (e) => {
+        /* Do something if any other error thrown */
       },
-      field: {
+    })
+  }
+}
+```
+
+#### Handling all errors
+
+```typescript
+async function getUserAndGreet() {
+  try {
+    const { data: myUser } = await fetchy.get<User>(
+      "https://server.com/api/users/me",
+      {
+        headers: { Authorization: "Bearer XXXXXX" },
+      }
+    )
+
+    greetUser(myUser)
+  } catch (e: any) {
+    handleError(e, {
+      all: (e) => {
+        /* Do something if any error */
+      },
+    })
+  }
+}
+```
+
+#### Example: Combined error handling
+
+_NOTE: If multiple error handling conditions are triggered, each of their callbacks will be executed._
+
+```typescript
+async function getUserAndGreet() {
+  try {
+    const { data: myUser } = await fetchy.get<User>(
+      "https://server.com/api/users/me",
+      {
+        headers: { Authorization: "Bearer XXXXXX" },
+      }
+    )
+
+    greetUser(myUser)
+  } catch (e: any) {
+    handleError(e, {
+      status: {
+        401: () => redirect("/auth"),
+      },
+      body: {
         errorMessage: (e, value) => {
           switch (value) {
             case "USER_NOT_ACTIVE":
-              // Do something if response includes { errorMessage: "USER_NOT_ACTIVE "}
-              break
-            case "USER_NOT_FOUND":
-              // Do something if response includes { errorMessage: "USER_NOT_FOUND "}
+              alert("Your account is no longer active.")
               break
             default:
-            // Do something if response includes { errorMessage: <anything else> }
+              alert(`Error: ${value}`)
           }
         },
       },
+      onFailure: {
+        network: () => alert("There was a network error."),
+      },
+      all: (e) => logError(e),
     })
   }
 }

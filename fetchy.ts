@@ -1,8 +1,18 @@
+export type FetchyResponse<T = any> = Response & { data: T; text: string }
+
 async function maybeThrowError<T>(response: Response) {
   if (response.ok) {
     return response.headers.get("content-type")?.includes("json")
-      ? { ...response, data: (await response.json()) as T }
-      : { ...response, data: {} }
+      ? ({
+          ...response,
+          data: (await response.json()) as T,
+          text: "",
+        } as FetchyResponse<T>)
+      : ({
+          ...response,
+          data: {},
+          text: await response.text(),
+        } as FetchyResponse)
   }
 
   if (response.headers.get("content-type")?.includes("json")) {
@@ -20,7 +30,7 @@ async function makeRequest<T>(
 ) {
   const response = await fetch(url, { ...options, method })
 
-  return await maybeThrowError<T>(response)
+  return maybeThrowError<T>(response)
 }
 
 const fetchy = {
@@ -41,16 +51,16 @@ const fetchy = {
   },
 }
 
-type CallbackConfig = {
+export type CallbackConfig = {
   status?: {
     [key: number]: (e?: any) => void
     other?: (e?: any) => void
     all?: (e?: any) => void
   }
-  field?: {
+  body?: {
     [key: string | number]: (e?: any, value?: any) => void
   }
-  onFailure?: {
+  client?: {
     fetch?: (e?: any) => void
     network?: (e?: any) => void
     abort?: (e?: any) => void
@@ -66,16 +76,16 @@ export function handleError(e: any, callbacks: CallbackConfig) {
   let errorThrown = false
   // Handle non-server errors
 
-  if (callbacks["onFailure"]) {
-    const allFailureCallback = callbacks["onFailure"]["all"]
+  if (callbacks.client) {
+    const allFailureCallback = callbacks.client["all"]
 
     // Handle specific TypeErrors
 
     if (e instanceof TypeError) {
       let callback: (e?: any) => void = () => {}
 
-      const fetchFailCallback = callbacks["onFailure"]["fetch"]
-      const networkFailCallback = callbacks["onFailure"]["network"]
+      const fetchFailCallback = callbacks.client["fetch"]
+      const networkFailCallback = callbacks.client["network"]
 
       const { message } = e
 
@@ -96,8 +106,8 @@ export function handleError(e: any, callbacks: CallbackConfig) {
       e.message?.toLowerCase().includes("abort") ||
       e.message?.toLowerCase().includes("security")
 
-    const abortCallback = callbacks["onFailure"]["abort"]
-    const securityCallback = callbacks["onFailure"]["security"]
+    const abortCallback = callbacks.client["abort"]
+    const securityCallback = callbacks.client["security"]
 
     if (e.message?.toLowerCase().includes("abort") && !!abortCallback) {
       const callback = abortCallback
@@ -113,7 +123,7 @@ export function handleError(e: any, callbacks: CallbackConfig) {
 
     // Handle SyntaxErrors
 
-    const syntaxCallback = callbacks["onFailure"]["syntax"]
+    const syntaxCallback = callbacks.client["syntax"]
     if (e instanceof SyntaxError && !!syntaxCallback) {
       syntaxCallback(e)
       errorThrown = true
@@ -162,8 +172,8 @@ export function handleError(e: any, callbacks: CallbackConfig) {
   // Handle any custom field server errors
 
   Object.keys(e).forEach((key) => {
-    if (key !== "status" && callbacks.field && callbacks.field[key]) {
-      const callback = callbacks.field[key]
+    if (key !== "status" && callbacks.body && callbacks.body[key]) {
+      const callback = callbacks.body[key]
       callback(e, e[key])
       errorThrown = true
     }
