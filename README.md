@@ -300,7 +300,7 @@ async function getUserAndGreet() {
           }
         },
       },
-      onFailure: {
+      client: {
         network: () => alert("There was a network error."),
       },
       all: (e) => logError(e),
