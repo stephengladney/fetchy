@@ -146,25 +146,6 @@ describe("handleError", () => {
     expect(allFailureCallback).toHaveBeenCalled()
   })
 
-  it("does not call status or key/valuecallbacks on failure", () => {
-    const allFailureCallback = jest.fn()
-    const statusAllCallback = jest.fn()
-    const customAllCallback = jest.fn()
-    try {
-      throw new DOMException("security")
-    } catch (e) {
-      handleError(e, {
-        onFailure: { all: allFailureCallback },
-        status: { all: statusAllCallback },
-        field: { myKey: customAllCallback },
-      })
-    }
-
-    expect(allFailureCallback).toHaveBeenCalled()
-    expect(statusAllCallback).not.toHaveBeenCalled()
-    expect(customAllCallback).not.toHaveBeenCalled()
-  })
-
   it("does not call onFailure callbacks on success", async () => {
     const callback401 = jest.fn()
     const fetchFailureCallback = jest.fn()
@@ -179,5 +160,66 @@ describe("handleError", () => {
 
     expect(callback401).toHaveBeenCalled()
     expect(fetchFailureCallback).not.toHaveBeenCalled()
+  })
+
+  it("calls other callback if no other callbacks are triggered", async () => {
+    const callback401 = jest.fn()
+    const callbackField = jest.fn()
+    const callbackFailed = jest.fn()
+    const otherCallback = jest.fn()
+
+    try {
+      await mockResponse("SOME_RANDOM_ERROR")
+    } catch (e) {
+      handleError(e, {
+        status: { 401: callback401 },
+        field: { fieldName: callbackField },
+        onFailure: { fetch: callbackFailed },
+        other: otherCallback,
+      })
+    }
+    expect(callback401).not.toHaveBeenCalled()
+    expect(callbackField).not.toHaveBeenCalled()
+    expect(callbackFailed).not.toHaveBeenCalled()
+    expect(otherCallback).toHaveBeenCalledWith("SOME_RANDOM_ERROR")
+  })
+
+  it("does not call other callback if another callbacks is triggered", async () => {
+    const callback401 = jest.fn()
+    const otherCallback = jest.fn()
+
+    try {
+      await mockResponse({ status: 401 })
+    } catch (e) {
+      handleError(e, {
+        status: { 401: callback401 },
+
+        other: otherCallback,
+      })
+    }
+    expect(callback401).toHaveBeenCalled()
+    expect(otherCallback).not.toHaveBeenCalled()
+  })
+
+  it("calls all callback if error", () => {
+    const callback401 = jest.fn()
+    const callbackField = jest.fn()
+    const callbackFailed = jest.fn()
+    const otherCallback = jest.fn()
+
+    try {
+      throw "SOME_RANDOM_ERROR"
+    } catch (e) {
+      handleError(e, {
+        status: { 401: callback401 },
+        field: { fieldName: callbackField },
+        onFailure: { fetch: callbackFailed },
+        other: otherCallback,
+      })
+    }
+    expect(callback401).not.toHaveBeenCalled()
+    expect(callbackField).not.toHaveBeenCalled()
+    expect(callbackFailed).not.toHaveBeenCalled()
+    expect(otherCallback).toHaveBeenCalledWith("SOME_RANDOM_ERROR")
   })
 })

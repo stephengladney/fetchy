@@ -2,7 +2,7 @@ async function maybeThrowError<T>(response: Response) {
   if (response.ok) {
     return response.headers.get("content-type")?.includes("json")
       ? { ...response, data: (await response.json()) as T }
-      : { ...response, data: null }
+      : { ...response, data: {} }
   }
 
   if (response.headers.get("content-type")?.includes("json")) {
@@ -58,9 +58,12 @@ type CallbackConfig = {
     syntax?: (e?: any) => void
     all?: (e?: any) => void
   }
+  other?: (e?: any) => void
+  all?: (e?: any) => void
 }
 
 export function handleError(e: any, callbacks: CallbackConfig) {
+  let errorThrown = false
   // Handle non-server errors
 
   if (callbacks["onFailure"]) {
@@ -84,6 +87,7 @@ export function handleError(e: any, callbacks: CallbackConfig) {
         callback = networkFailCallback
       }
       callback(e)
+      errorThrown = true
     }
 
     // Handle specific DOMExceptions
@@ -98,11 +102,13 @@ export function handleError(e: any, callbacks: CallbackConfig) {
     if (e.message?.toLowerCase().includes("abort") && !!abortCallback) {
       const callback = abortCallback
       callback(e)
+      errorThrown = true
     }
 
     if (e.message?.toLowerCase().includes("security") && !!securityCallback) {
       const callback = securityCallback
       callback(e)
+      errorThrown = true
     }
 
     // Handle SyntaxErrors
@@ -110,6 +116,7 @@ export function handleError(e: any, callbacks: CallbackConfig) {
     const syntaxCallback = callbacks["onFailure"]["syntax"]
     if (e instanceof SyntaxError && !!syntaxCallback) {
       syntaxCallback(e)
+      errorThrown = true
     }
 
     if (
@@ -118,7 +125,8 @@ export function handleError(e: any, callbacks: CallbackConfig) {
         e instanceof SyntaxError) &&
       !!allFailureCallback
     ) {
-      return allFailureCallback(e)
+      errorThrown = true
+      allFailureCallback(e)
     }
   }
 
@@ -127,6 +135,7 @@ export function handleError(e: any, callbacks: CallbackConfig) {
   if (e.status && callbacks.status && callbacks.status[e.status]) {
     const callback = callbacks.status[e.status]
     callback(e)
+    errorThrown = true
   }
 
   // Handle other status errors
@@ -139,6 +148,7 @@ export function handleError(e: any, callbacks: CallbackConfig) {
   ) {
     const callback = callbacks.status.other
     callback(e)
+    errorThrown = true
   }
 
   // Handle all status errors
@@ -146,6 +156,7 @@ export function handleError(e: any, callbacks: CallbackConfig) {
   if (e.status && callbacks.status && callbacks.status.all) {
     const callback = callbacks.status.all
     callback(e)
+    errorThrown = true
   }
 
   // Handle any custom field server errors
@@ -154,8 +165,21 @@ export function handleError(e: any, callbacks: CallbackConfig) {
     if (key !== "status" && callbacks.field && callbacks.field[key]) {
       const callback = callbacks.field[key]
       callback(e, e[key])
+      errorThrown = true
     }
   })
+
+  // Handle other errors
+  if (!errorThrown && callbacks.other) {
+    const callback = callbacks.other
+    callback(e)
+  }
+
+  // Handle all errors
+  if (callbacks.all) {
+    const callback = callbacks.all
+    callback(e)
+  }
 }
 
 export default fetchy
