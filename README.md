@@ -9,7 +9,7 @@ Fetchy is a zero dependency wrapper for JavaScript's fetch method that automatic
 1. Install the package with `npm i @gladknee/fetchy`
 2. Import the default fetchy export from the library.
 3. The fetchy object provides four functions for making requests: `get`, `post`, `put`, `delete`.
-4. A successful request returns a native `Response` with additional keys of `data` and `text`, which contain any parsed JSON or decoded text respectively.
+4. A successful request returns a native `Response` with an additional `data` key containing any parsed JSON.
 
 ```typescript
 import fetchy from "@gladknee/fetchy"
@@ -33,7 +33,7 @@ fetchy
 ### Definitions
 
 ```typescript
-type FetchyResponse<T = any> = Response & { data: T; text: string }
+export type FetchyResponse<T> = Response & { data: T }
 
 function get<T = any>(
   url: string,

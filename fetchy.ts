@@ -1,21 +1,12 @@
-export type FetchyResponse<T = any> = Response & { data: T; text: string }
+export type FetchyResponse<T> = Response & { data: T }
 
 async function maybeThrowError<T>(response: Response) {
   if (response.ok) {
-    return response.headers.get("content-type")?.includes("json")
-      ? ({
-          ...response,
-          data: (await response.json()) as T,
-          text: "",
-        } as FetchyResponse<T>)
-      : ({
-          ...response,
-          data: {},
-          text: await response.text(),
-        } as FetchyResponse)
-  }
-
-  if (response.headers.get("content-type")?.includes("json")) {
+    return {
+      ...response,
+      data: (await response.json()) as T,
+    } as FetchyResponse<T>
+  } else if (response.headers.get("content-type")?.includes("json")) {
     const parsedResponse = await response.json()
     throw { status: response.status, ...parsedResponse }
   } else {
