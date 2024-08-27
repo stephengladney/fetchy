@@ -38,24 +38,24 @@ export type FetchyResponse<T> = Response & { data: T }
 function get<T = any>(
   url: string,
   options?: Omit<RequestInit, "method">
-): Promise<FetchyResponse<T>>
+): Promise<FetchyResponse<T>> {}
 
 function post<T = any>(
   url: string,
   options?: Omit<RequestInit, "method">
-): Promise<FetchyResponse<T>>
+): Promise<FetchyResponse<T>> {}
 
 function put<T = any>(
   url: string,
   options?: Omit<RequestInit, "method">
-): Promise<FetchyResponse<T>>
+): Promise<FetchyResponse<T>> {}
 
 function delete<T = any>(
   url: string,
   options?: Omit<RequestInit, "method">
-): Promise<FetchyResponse<T>>
+): Promise<FetchyResponse<T>> {}
 
-function handleError(e: any, callbacks: CallbackConfig)
+function handleError(e: any, callbacks: CallbackConfig) {}
 
 type CallbackConfig = {
   status?: {
@@ -236,8 +236,8 @@ async function getUserAndGreet() {
       status: {
         401: (e) => {
           /* Do something if 401 response */
-        }
-      }
+        },
+      },
       other: (e) => {
         /* Do something if any other error thrown */
       },
