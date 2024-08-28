@@ -10,7 +10,7 @@ async function getResponseData<T>(response: Response) {
     case "text/html":
       return (await response.text()) as T
     default:
-      return null
+      return {} as T
   }
 }
 
