@@ -2,6 +2,8 @@
 
 Fetchy is a zero dependency wrapper for JavaScript's fetch method that automatically throws an error on non 200-300 statuses and accepts TypeScript generics for type-safe returns. It also provides error handling that allows you to easily execute different callbacks for different types of errors.
 
+IMPORTANT: The library currently only handles responses with text or JSON (or no) content types. I'll be adding support for other content types in the future.
+
 ## Documentation
 
 ### Quick Start
@@ -313,7 +315,7 @@ async function getUserAndGreet() {
 
 Fetchy works great with Tanstack Query. Below is a popular implementation.
 
-_NOTE: You may want to parse `data` from the response in your function to avoid referencing `data.data` in your frontend code._
+_NOTE: You may want to extract `data` from the response in your function to avoid referencing `data.data` in your frontend code._
 
 ```typescript
 export async function someRequest() {
@@ -322,7 +324,7 @@ export async function someRequest() {
 }
 
 export function SomeComponent() {
-  const { data, isError, error, refetch } = useQuery({
+  const { data, isError, error } = useQuery({
     queryKey: ["yourkey"]
     queryFn: someRequest
   })
