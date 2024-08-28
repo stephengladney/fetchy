@@ -308,3 +308,83 @@ async function getUserAndGreet() {
   }
 }
 ```
+
+### Use with TanStack Query (react-query)
+
+Fetchy works great with Tanstack Query. Below is a popular implementation.
+
+_NOTE: You may want to parse `data` from the response in your function to avoid referencing `data.data` in your frontend code._
+
+```typescript
+export async function someRequest() {
+  const { data } = await fetchy.get("url")
+  return data
+}
+
+export function SomeComponent() {
+  const { data, isError, error, refetch } = useQuery({
+    queryKey: ["yourkey"]
+    queryFn: someRequest
+  })
+
+  useEffect(() => {
+    if (isError) {
+      handleError(error, callbackConfig)
+    }
+  }, [isError, error])
+}
+```
+
+### Helpful tips
+
+Combining multiple types of error handling can lead to bulky code. One helpful tip is to separate out your error handling logic into their own objects and pass them in to your handleError callbacks.
+
+Example:
+
+```typescript
+const handleStatusErrors = {
+  401: () => router.push("/auth/signin"),
+  402: () => router.push("/upgrade"),
+  500: (e: any?) => logInternalServerError(e),
+  // ...etc
+}
+
+const handleClientErrors = {
+  fetch: () => alert("Please check your internet connection."),
+  network: () => alert("We experienced a network error. Please try again."),
+}
+
+const handleErrorMessages = (e: any, message: string) => {
+  switch (message) {
+    case "USER_NOT_FOUND":
+      alert("You do not have an account.")
+      break
+    case "USER_DEACTIVED":
+      alert("Your account has been deactivated.")
+      break
+    default:
+      alert(`Error: ${message}`)
+  }
+}
+
+function logError(e: any) {
+  // do something to log any errors
+}
+
+const myErrorHandlers = {
+  status: handleStatusErrors,
+  client: handleClientErrors,
+  body: {
+    errorMessage: handleErrorMessages,
+  },
+  all: logError,
+}
+
+async function someRequest() {
+  try {
+    const { data } = await fetchy.get("url")
+  } catch (e: any) {
+    handleErrors(e, myErrorHandlers)
+  }
+}
+```
