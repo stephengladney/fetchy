@@ -1,12 +1,27 @@
-export type FetchyResponse<T> = Response & { data: T }
+export type FetchyResponse<T> = Response & { data: T | null }
+
+async function getResponseData<T>(response: Response) {
+  const contentType = response.headers.get("content-type")?.split(";")[0]
+
+  switch (contentType) {
+    case "application/json":
+      return (await response.json()) as T
+    case "text/plain":
+    case "text/html":
+      return (await response.text()) as T
+    default:
+      return {} as T
+  }
+}
 
 async function maybeThrowError<T>(response: Response) {
+  const isJsonResponse = response.headers.get("content-type")?.includes("json")
   if (response.ok) {
     return {
       ...response,
-      data: (await response.json()) as T,
+      data: await getResponseData<T>(response),
     } as FetchyResponse<T>
-  } else if (response.headers.get("content-type")?.includes("json")) {
+  } else if (isJsonResponse) {
     const parsedResponse = await response.json()
     throw { status: response.status, ...parsedResponse }
   } else {
