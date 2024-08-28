@@ -11,7 +11,7 @@ IMPORTANT: The library currently only handles responses with text or JSON (or no
 1. Install the package with `npm i @gladknee/fetchy`
 2. Import the default fetchy export from the library.
 3. The fetchy object provides four functions for making requests: `get`, `post`, `put`, `delete`.
-4. A successful request returns a native `Response` with an additional `data` key containing any parsed JSON.
+4. A successful request returns a native `Response` with an additional `data` key containing any parsed JSON or text.
 
 ```typescript
 import fetchy from "@gladknee/fetchy"
@@ -21,7 +21,7 @@ import fetchy from "@gladknee/fetchy"
 async function yourFunction() {
   try {
     const { data } = await fetchy.get("https://server.com/api/endpoint")
-  } catch (e) {}
+  } catch (e: any) {}
 }
 
 // Chaining method
@@ -82,7 +82,7 @@ async function getAndGreetUser() {
     const user = await getUser()
 
     greetUser(user)
-  } catch (e) {
+  } catch (e: any) {
     // handle error
   }
 }
@@ -144,16 +144,16 @@ async function getAndGreetUser() {
   } catch (e: any) {
     handleError(e, {
       body: {
-        errorMessage: (e, value) => {
+        fieldName: (e, value) => {
           switch (value) {
-            case "USER_NOT_ACTIVE":
-              // Do something if response includes { errorMessage: "USER_NOT_ACTIVE "}
+            case "SOME_VALUE":
+              // Do something if response includes { fieldName: "SOME_VALUE" }
               break
-            case "USER_NOT_FOUND":
-              // Do something if response includes { errorMessage: "USER_NOT_FOUND "}
+            case "SOME_OTHER_VALUE":
+              // Do something if response includes { fieldName: "SOME_OTHER_VALUE "}
               break
             default:
-            // Do something if response includes { errorMessage: <anything else> }
+            // Do something if response includes { fieldName: <anything else> }
           }
         },
       },
@@ -222,6 +222,8 @@ async function getAndGreetUser() {
 
 #### Handling all errors
 
+You can also execute a callback on any error. This will be executed along with any other triggered callbacks. So in this example, on a 401 or 409 error, the user is redirected and the error is logged.
+
 ```typescript
 async function getAndGreetUser() {
   try {
@@ -230,8 +232,12 @@ async function getAndGreetUser() {
     greetUser(user)
   } catch (e: any) {
     handleError(e, {
+      status: {
+        401: () => redirect("/auth"),
+        402: () => redirect("/upgrade"),
+      },
       all: (e) => {
-        /* Do something if any error */
+        logError(e)
       },
     })
   }
@@ -298,33 +304,9 @@ type CallbackConfig = {
 }
 ```
 
-### Use with TanStack Query (react-query)
-
-Fetchy works great with Tanstack Query. Below is a popular implementation.
-
-```typescript
-export async function getUser() {
-  const { data } = await fetchy.get("https://server.com/api/users/me")
-  return data
-}
-
-export function SomeComponent() {
-  const { data, isError, error } = useQuery({
-    queryKey: ["yourkey"],
-    queryFn: getUser,
-  })
-
-  useEffect(() => {
-    if (isError) {
-      handleError(error, callbackConfig)
-    }
-  }, [isError, error])
-}
-```
-
 ### Helpful tips
 
-Combining multiple types of error handling can lead to bulky code. One helpful tip is to separate out your error handling logic into their own object(s) and pass them in to your handleError callbacks.
+As you can see in the previous example, combining multiple types of error handling can lead to bulky code. One helpful tip is to separate out your error handling logic into their own object(s) and pass them in to your handleError callbacks.
 
 Example:
 
@@ -373,5 +355,29 @@ async function someRequest() {
   } catch (e: any) {
     handleErrors(e, myErrorHandlers)
   }
+}
+```
+
+### Use with TanStack Query (react-query)
+
+Fetchy works great with Tanstack Query. Below is a popular implementation.
+
+```typescript
+export async function getUser() {
+  const { data } = await fetchy.get("https://server.com/api/users/me")
+  return data
+}
+
+export function SomeComponent() {
+  const { data, isError, error } = useQuery({
+    queryKey: ["yourkey"],
+    queryFn: getUser,
+  })
+
+  useEffect(() => {
+    if (isError) {
+      handleError(error, callbackConfig)
+    }
+  }, [isError, error])
 }
 ```
