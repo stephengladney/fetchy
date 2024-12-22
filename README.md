@@ -1,106 +1,115 @@
 # fetchy
 
-Fetchy is a zero dependency wrapper for JavaScript's fetch method that automatically throws an error on non 200-300 statuses and accepts TypeScript generics for type-safe returns. It also provides error handling that allows you to easily execute different callbacks for different types of errors.
+Fetchy is an open source, zero dependency wrapper for JavaScript's fetch function. It provides the following benefits:
 
-IMPORTANT: The library currently only handles responses with text or JSON (or no) content types. I'll be adding support for other content types in the future.
+1. Simple get, post, put and delete functions
+2. Accepts TypeScript generics for type-safe returns.
+3. Returns errors rather than throwing them, removing the need to use try/catch blocks. (version ≥1.2.0)
+4. Easy handling of different types of fetch errors.
 
 ## Documentation
 
 ### Quick Start
 
-1. Install the package with `npm i @gladknee/fetchy`
-2. Import the default fetchy export from the library.
-3. The fetchy object provides four functions for making requests: `get`, `post`, `put`, `delete`.
-4. A successful request returns a native `Response` with an additional `data` key containing any parsed JSON or text.
+1. Install the package.
+
+   `npm i @gladknee/fetchy`
+
+2. Import the default export from the library.
+
+   `import fetchy from "@gladknee/fetchy"`
+
+3. The imported object provides four functions for making requests: `get`, `post`, `put`, `delete`.
+
+_NOTE: The `error` key is returned in version ≥1.2.0. For earlier versions, the error is thrown like a normal rejected promise._
 
 ```typescript
 import fetchy from "@gladknee/fetchy"
 
-// async await method
-
 async function yourFunction() {
-  try {
-    const { data } = await fetchy.get("https://server.com/api/endpoint")
-  } catch (e: any) {}
-}
+  const [data, error, response] = await fetchy.get(
+    "https://server.com/api/endpoint"
+  )
 
-// Chaining method
-
-fetchy
-  .get("https://server.com/api/endpoint")
-  .then(({ data }) => {})
-  .catch((e: any) => {})
-```
-
-### Methods
-
-```typescript
-type FetchyResponse<T> = Response & { data: T }
-
-function get<T = any>(
-  url: string,
-  options?: Omit<RequestInit, "method">
-): Promise<FetchyResponse<T>> {}
-
-function post<T = any>(
-  url: string,
-  options?: Omit<RequestInit, "method">
-): Promise<FetchyResponse<T>> {}
-
-function put<T = any>(
-  url: string,
-  options?: Omit<RequestInit, "method">
-): Promise<FetchyResponse<T>> {}
-
-function delete<T = any>(
-  url: string,
-  options?: Omit<RequestInit, "method">
-): Promise<FetchyResponse<T>> {}
-
-```
-
-### Examples
-
-We have a `User` type and `greetUser()` function that accepts a User. We'll create a `getUser()` function that makes a GET request to fetch the user and pass it to the greetUser function.
-
-```typescript
-type User = { id: number; name: string }
-
-function greetUser(user: User) {
-  alert(`Hello ${user.name}`)
-}
-
-async function getUser() {
-  const { data } = await fetchy.get<User>("https://server.com/api/users/me", {
-    headers: { Authorization: "Bearer XXXXXX" },
-  })
-  return data
-}
-
-async function getAndGreetUser() {
-  try {
-    const user = await getUser()
-
-    greetUser(user)
-  } catch (e: any) {
+  if (data) {
+    // handle returned data
+  } else {
     // handle error
   }
 }
+
+// You can also pass config options like a normal fetch call...
+
+const [data, error] = await fetchy.get("https://server.com/api/endpoint", {
+  headers: { Authorization: "Bearer XXXXXX" },
+})
+```
+
+### HTTP Methods
+
+```typescript
+function get<T = unknown>(
+  url: string,
+  options?: Omit<RequestInit, "method">
+): Promise<FetchyResponse<T>> {}
+
+function post<T = unknown>(
+  url: string,
+  options?: Omit<RequestInit, "method">
+): Promise<FetchyResponse<T>> {}
+
+function put<T = unknown>(
+  url: string,
+  options?: Omit<RequestInit, "method">
+): Promise<FetchyResponse<T>> {}
+
+function delete<T = unknown>(
+  url: string,
+  options?: Omit<RequestInit, "method">
+): Promise<FetchyResponse<T>> {}
+
+```
+
+### Types
+
+```typescript
+type FetchyResponse<T> = [
+  error: FetchyError | undefined,
+  data: T | undefined,
+  response: Response
+]
+
+export type FetchyError = Error | ({ status: number } & Record<string, any>)
 ```
 
 ### Error Handling
 
-Import the `handleError` function from the library. You can then call this function inside your catch block by passing two required parameters: the error and your error handling callback configuration.
+The imported `fetchy` object contains a `handleError` method. You can call this function by passing two required parameters: the error and your error handling callback configuration.
+
+_NOTE: If you are using versions <1.2.0, you will need to import `handleError` separately from the fetchy default export. You will also need to call the function inside your catch block._
 
 ```typescript
-import fetchy, { handleError } from "@gladknee/fetchy"
+function handleError(e: any, callbacks: CallbackConfig)
 
-async function someRequest() {
-  try {
-    const { data } = await fetchy.get("https://server.com/api")
-  } catch (e: any) {
-    handleError(e, callbackConfig)
+type CallbackConfig = {
+  status?: {
+    [key: number]: (e?: any) => void
+    other?: (e?: any) => void
+    all?: (e?: any) => void
   }
+  body?: {
+    [key: string | number]: (value?: any, e?: any) => void
+  }
+  client?: {
+    fetch?: (e?: any) => void
+    network?: (e?: any) => void
+    abort?: (e?: any) => void
+    security?: (e?: any) => void
+    syntax?: (e?: any) => void
+    all?: (e?: any) => void
+  }
+  other?: (e?: any) => void
+  all?: (e?: any) => void
 }
 ```
 
@@ -108,23 +117,23 @@ async function someRequest() {
 
 ```typescript
 async function getAndGreetUser() {
-  try {
-    const user = await getUser()
+  const [data, error] = await fetchy.get("https://api.com/users/1")
 
-    greetUser(user)
-  } catch (e: any) {
-    handleError(e, {
+  if (data) {
+    greetUser(data)
+  } else {
+    fetchy.handleError(error, {
       status: {
-        401: (e) => {
+        401: (error) => {
           /* Do something if 401 response */
         },
-        500: (e) => {
+        500: (error) => {
           /* Do something if 500 response */
         },
-        other: (e) => {
+        other: (error) => {
           /* Do something on any other non 200-300 statuses */
         },
-        all: (e) => {
+        all: (error) => {
           /* Do something on any non 200-300 status */
         },
       },
@@ -137,14 +146,14 @@ async function getAndGreetUser() {
 
 ```typescript
 async function getAndGreetUser() {
-  try {
-    const user = await getUser()
+  const [data, error] = await fetchy.get("https://api.com/users/1")
 
-    greetUser(user)
-  } catch (e: any) {
-    handleError(e, {
+  if (data) {
+    greetUser(data)
+  } else {
+    fetchy.handleError(error, {
       body: {
-        fieldName: (e, value) => {
+        fieldName: (value, error) => {
           switch (value) {
             case "SOME_VALUE":
               // Do something if response includes { fieldName: "SOME_VALUE" }
@@ -166,29 +175,29 @@ async function getAndGreetUser() {
 
 ```typescript
 async function getAndGreetUser() {
-  try {
-    const user = await getUser()
+  const [data, error] = await fetchy.get("https://api.com/users/1")
 
-    greetUser(user)
-  } catch (e: any) {
-    handleError(e, {
+  if (data) {
+    greetUser(data)
+  } else {
+    fetchy.handleError(error, {
       client: {
-        fetch: (e) => {
+        fetch: (error) => {
           /* Do something if fetch failed */
         },
-        network: (e) => {
+        network: (error) => {
           /* Do something if network error */
         },
-        abort: (e) => {
+        abort: (error) => {
           /* Do something if user aborted */
         },
-        security: (e) => {
+        security: (error) => {
           /* Do something if security error */
         },
-        syntax: (e) => {
+        syntax: (error) => {
           /* Do something if syntax error */
         },
-        all: (e) => {
+        all: (error) => {
           /* Do something if any client-side error */
         },
       },
@@ -201,18 +210,18 @@ async function getAndGreetUser() {
 
 ```typescript
 async function getAndGreetUser() {
-  try {
-    const user = await getUser()
+  const [data, error] = await fetchy.get("https://api.com/users/1")
 
-    greetUser(user)
-  } catch (e: any) {
-    handleError(e, {
+  if (data) {
+    greetUser(data)
+  } else {
+    fetchy.handleError(error, {
       status: {
-        401: (e) => {
+        401: (error) => {
           /* Do something if 401 response */
         },
       },
-      other: (e) => {
+      other: (error) => {
         /* Do something if any other error is thrown */
       },
     })
@@ -222,22 +231,21 @@ async function getAndGreetUser() {
 
 #### Handling all errors
 
-You can also execute a callback on any error. This will be executed along with any other triggered callbacks. So in this example, on a 401 or 409 error, the user is redirected and the error is logged.
+You can also execute a callback on any error. This will be executed along with any other triggered callbacks. So in this example, on a 401 error, the user is redirected and the error is logged.
 
 ```typescript
 async function getAndGreetUser() {
-  try {
-    const user = await getUser()
+  const [data, error] = await fetchy.get("https://api.com/users/1")
 
-    greetUser(user)
-  } catch (e: any) {
-    handleError(e, {
+  if (data) {
+    greetUser(data)
+  } else {
+    fetchy.handleError(error, {
       status: {
         401: () => redirect("/auth"),
-        402: () => redirect("/upgrade"),
       },
-      all: (e) => {
-        logError(e)
+      all: (error) => {
+        logError(error)
       },
     })
   }
@@ -250,17 +258,17 @@ _NOTE: If multiple error handling conditions are triggered, each of their callba
 
 ```typescript
 async function getAndGreetUser() {
-  try {
-    const user = await getUser()
+  const { data, error } = await fetchy.get("https://api.com/users/1")
 
-    greetUser(user)
-  } catch (e: any) {
-    handleError(e, {
+  if (data) {
+    greetUser(data)
+  } else {
+    fetchy.handleError(error, {
       status: {
         401: () => redirect("/auth"),
       },
       body: {
-        errorMessage: (e, value) => {
+        errorMessage: (value, error) => {
           switch (value) {
             case "USER_NOT_ACTIVE":
               alert("Your account is no longer active.")
@@ -273,34 +281,9 @@ async function getAndGreetUser() {
       client: {
         network: () => alert("There was a network error."),
       },
-      all: (e) => logError(e),
+      all: (error) => logError(error),
     })
   }
-}
-```
-
-Here's the full type definition of a callback configuration:
-
-```typescript
-type CallbackConfig = {
-  status?: {
-    [key: number]: (e?: any) => void
-    other?: (e?: any) => void
-    all?: (e?: any) => void
-  }
-  body?: {
-    [key: string | number]: (e?: any, value?: any) => void
-  }
-  client?: {
-    fetch?: (e?: any) => void
-    network?: (e?: any) => void
-    abort?: (e?: any) => void
-    security?: (e?: any) => void
-    syntax?: (e?: any) => void
-    all?: (e?: any) => void
-  }
-  other?: (e?: any) => void
-  all?: (e?: any) => void
 }
 ```
 
@@ -311,10 +294,12 @@ As you can see in the previous example, combining multiple types of error handli
 Example:
 
 ```typescript
+import type { CallbackConfig } from "@gladknee/fetchy"
+
 const handleStatusErrors = {
   401: () => router.push("/auth/signin"),
   402: () => router.push("/upgrade"),
-  500: (e: any?) => logInternalServerError(e),
+  500: (error: any) => logInternalServerError(eror),
   // ...etc
 }
 
@@ -323,12 +308,12 @@ const handleClientErrors = {
   network: () => alert("We experienced a network error. Please try again."),
 }
 
-const handleErrorMessages = (e: any, message: string) => {
+const handleErrorMessages = (message: string) => {
   switch (message) {
     case "USER_NOT_FOUND":
       alert("You do not have an account.")
       break
-    case "USER_DEACTIVED":
+    case "USER_DEACTIVATED":
       alert("Your account has been deactivated.")
       break
     default:
@@ -336,11 +321,11 @@ const handleErrorMessages = (e: any, message: string) => {
   }
 }
 
-function logError(e: any) {
+function logError(error: any) {
   // do something to log any errors
 }
 
-const myErrorHandlers = {
+const myErrorHandlers: CallbackConfig = {
   status: handleStatusErrors,
   client: handleClientErrors,
   body: {
@@ -350,10 +335,12 @@ const myErrorHandlers = {
 }
 
 async function someRequest() {
-  try {
-    const { data } = await fetchy.get("url")
-  } catch (e: any) {
-    handleErrors(e, myErrorHandlers)
+  const { data, error } = await fetchy.get("https://api.com/users/1")
+
+  if (data) {
+    greetUser(data)
+  } else {
+    fetchy.handleErrors(error, myErrorHandlers)
   }
 }
 ```
@@ -364,8 +351,10 @@ Fetchy works great with Tanstack Query. Below is a popular implementation.
 
 ```typescript
 export async function getUser() {
-  const { data } = await fetchy.get("https://server.com/api/users/me")
-  return data
+  const { data, error } = await fetchy.get("https://api.com/users/1")
+
+  if (data) return data
+  else throw error // Throw the error so that it bubbles up to your useQuery hook
 }
 
 export function SomeComponent() {
@@ -376,7 +365,7 @@ export function SomeComponent() {
 
   useEffect(() => {
     if (isError) {
-      handleError(error, callbackConfig)
+      fetchy.handleError(error, callbackConfig)
     }
   }, [isError, error])
 }
