@@ -1,6 +1,6 @@
 export type FetchyResponse<T> =
-  | [T, undefined, Response]
-  | [undefined, FetchyError, Response]
+  | [data: T, error: undefined, response: Response]
+  | [data: undefined, error: FetchyError, response: Response]
 
 export type FetchyError = Error | ({ status: number } & Record<string, any>)
 
@@ -82,7 +82,7 @@ export type CallbackConfig = {
     all?: (e?: any) => void
   }
   body?: {
-    [key: string | number]: (value?: any, e?: any) => void
+    [key: string]: (value?: any, e?: any) => void
   }
   client?: {
     fetch?: (e?: any) => void

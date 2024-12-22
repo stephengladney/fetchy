@@ -4,8 +4,8 @@ Fetchy is an open source, zero dependency wrapper for JavaScript's fetch functio
 
 1. Simple get, post, put and delete functions
 2. Accepts TypeScript generics for type-safe returns.
-3. Returns errors rather than throwing them, removing the need to use try/catch blocks. (version ≥1.2.0)
-4. Easy handling of different types of fetch errors.
+3. Returns errors rather than throwing them, removing the need to use try/catch blocks. (version ≥2.0.0)
+4. Easily detects and handles different types of fetch errors.
 
 ## Documentation
 
@@ -20,8 +20,6 @@ Fetchy is an open source, zero dependency wrapper for JavaScript's fetch functio
    `import fetchy from "@gladknee/fetchy"`
 
 3. The imported object provides four functions for making requests: `get`, `post`, `put`, `delete`.
-
-_NOTE: The `error` key is returned in version ≥1.2.0. For earlier versions, the error is thrown like a normal rejected promise._
 
 ```typescript
 import fetchy from "@gladknee/fetchy"
@@ -44,6 +42,8 @@ const [data, error] = await fetchy.get("https://server.com/api/endpoint", {
   headers: { Authorization: "Bearer XXXXXX" },
 })
 ```
+
+_NOTE: For versions <2.0.0, the function returns an object with a `data` key. If an error occurs, the error is thrown._
 
 ### HTTP Methods
 
@@ -73,43 +73,41 @@ function delete<T = unknown>(
 ### Types
 
 ```typescript
-type FetchyResponse<T> = [
-  error: FetchyError | undefined,
-  data: T | undefined,
-  response: Response
-]
+type FetchyResponse<T> =
+  | [data: T, error: undefined, response: Response]
+  | [data: undefined, error: FetchyError, response: Response]
 
 export type FetchyError = Error | ({ status: number } & Record<string, any>)
 ```
 
 ### Error Handling
 
-The imported `fetchy` object contains a `handleError` method. You can call this function by passing two required parameters: the error and your error handling callback configuration.
+The imported `fetchy` object also contains a `handleError` method. You can call this function by passing two required parameters: the error and your error handling callback configuration.
 
-_NOTE: If you are using versions <1.2.0, you will need to import `handleError` separately from the fetchy default export. You will also need to call the function inside your catch block._
+_NOTE: If you are using versions <2.0.0, you will need to import `handleError` separately from the fetchy default export. You will also need to call the function inside your catch block._
 
 ```typescript
-function handleError(e: any, callbacks: CallbackConfig)
+function handleError(e: FetchyError, callbacks: CallbackConfig)
 
 type CallbackConfig = {
   status?: {
-    [key: number]: (e?: any) => void
-    other?: (e?: any) => void
-    all?: (e?: any) => void
+    [key: number]: (e?: FetchyError) => void
+    other?: (e?: FetchyError) => void
+    all?: (e?: FetchyError) => void
   }
   body?: {
-    [key: string | number]: (value?: any, e?: any) => void
+    [key: string]: (value?: any, e?: FetchyError) => void
   }
   client?: {
-    fetch?: (e?: any) => void
-    network?: (e?: any) => void
-    abort?: (e?: any) => void
-    security?: (e?: any) => void
-    syntax?: (e?: any) => void
-    all?: (e?: any) => void
+    fetch?: (e?: FetchyError) => void
+    network?: (e?: FetchyError) => void
+    abort?: (e?: FetchyError) => void
+    security?: (e?: FetchyError) => void
+    syntax?: (e?: FetchyError) => void
+    all?: (e?: FetchyError) => void
   }
-  other?: (e?: any) => void
-  all?: (e?: any) => void
+  other?: (e?: FetchyError) => void
+  all?: (e?: FetchyError) => void
 }
 ```
 
