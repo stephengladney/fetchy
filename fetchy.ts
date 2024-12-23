@@ -1,4 +1,8 @@
-export type FetchyResponse<T> = Response & { data: T | null }
+export type FetchyResponse<T> =
+  | [data: T, error: undefined, response: Response]
+  | [data: undefined, error: FetchyError, response: Response]
+
+export type FetchyError = Error | ({ status: number } & Record<string, any>)
 
 async function getResponseData<T>(response: Response) {
   const contentType = response.headers.get("content-type")?.split(";")[0]
@@ -14,19 +18,19 @@ async function getResponseData<T>(response: Response) {
   }
 }
 
-async function maybeThrowError<T>(response: Response) {
-  const isJsonResponse = response.headers.get("content-type")?.includes("json")
+async function maybeReturnError<T>(
+  response: Response
+): Promise<FetchyResponse<T>> {
   if (response.ok) {
-    return {
-      ...response,
-      data: await getResponseData<T>(response),
-    } as FetchyResponse<T>
-  } else if (isJsonResponse) {
-    const parsedResponse = await response.json()
-    throw { status: response.status, ...parsedResponse }
+    return [await getResponseData<T>(response), undefined, response]
   } else {
-    throw response
+    const parsedResponse = await response.json()
+    return [undefined, { status: response.status, ...parsedResponse }, response]
   }
+}
+
+function returnError<T>(response: Response, e: any): FetchyResponse<T> {
+  return [undefined, e, response]
 }
 
 async function makeRequest<T>(
@@ -34,27 +38,41 @@ async function makeRequest<T>(
   method: "GET" | "PUT" | "POST" | "DELETE",
   options?: Omit<RequestInit, "method">
 ) {
-  const response = await fetch(url, { ...options, method })
-
-  return maybeThrowError<T>(response)
+  let response: Response | null = null
+  try {
+    response = await fetch(url, { ...options, method })
+    return maybeReturnError<T>(response)
+  } catch (e) {
+    return returnError<T>(response!, e)
+  }
 }
 
 const fetchy = {
-  get: async <T = any>(url: string, options?: Omit<RequestInit, "method">) => {
+  get: async <T = unknown>(
+    url: string,
+    options?: Omit<RequestInit, "method">
+  ) => {
     return makeRequest<T>(url, "GET", options)
   },
-  put: async <T = any>(url: string, options?: Omit<RequestInit, "method">) => {
+  put: async <T = unknown>(
+    url: string,
+    options?: Omit<RequestInit, "method">
+  ) => {
     return makeRequest<T>(url, "PUT", options)
   },
-  post: async <T = any>(url: string, options?: Omit<RequestInit, "method">) => {
+  post: async <T = unknown>(
+    url: string,
+    options?: Omit<RequestInit, "method">
+  ) => {
     return makeRequest<T>(url, "POST", options)
   },
-  delete: async <T = any>(
+  delete: async <T = unknown>(
     url: string,
     options?: Omit<RequestInit, "method">
   ) => {
     return makeRequest<T>(url, "DELETE", options)
   },
+  handleError,
 }
 
 export type CallbackConfig = {
@@ -64,7 +82,7 @@ export type CallbackConfig = {
     all?: (e?: any) => void
   }
   body?: {
-    [key: string | number]: (e?: any, value?: any) => void
+    [key: string]: (value?: any, e?: any) => void
   }
   client?: {
     fetch?: (e?: any) => void
@@ -78,7 +96,7 @@ export type CallbackConfig = {
   all?: (e?: any) => void
 }
 
-export function handleError(e: any, callbacks: CallbackConfig) {
+function handleError(error: FetchyError, callbacks: CallbackConfig) {
   let errorThrown = false
   // Handle non-server errors
 
@@ -87,13 +105,13 @@ export function handleError(e: any, callbacks: CallbackConfig) {
 
     // Handle specific TypeErrors
 
-    if (e instanceof TypeError) {
+    if (error instanceof TypeError) {
       let callback: (e?: any) => void = () => {}
 
       const fetchFailCallback = callbacks.client["fetch"]
       const networkFailCallback = callbacks.client["network"]
 
-      const { message } = e
+      const { message } = error
 
       if (message.toLowerCase().includes("failed") && !!fetchFailCallback) {
         callback = fetchFailCallback
@@ -102,99 +120,109 @@ export function handleError(e: any, callbacks: CallbackConfig) {
       if (message.toLowerCase().includes("network") && !!networkFailCallback) {
         callback = networkFailCallback
       }
-      callback(e)
+      callback(error)
       errorThrown = true
     }
 
     // Handle specific DOMExceptions
 
     const isDOMExceptionError =
-      e.message?.toLowerCase().includes("abort") ||
-      e.message?.toLowerCase().includes("security")
+      error instanceof DOMException &&
+      (error.message?.toLowerCase().includes("abort") ||
+        error.message?.toLowerCase().includes("security"))
 
-    const abortCallback = callbacks.client["abort"]
-    const securityCallback = callbacks.client["security"]
+    if (isDOMExceptionError) {
+      const abortCallback = callbacks.client["abort"]
+      const securityCallback = callbacks.client["security"]
 
-    if (e.message?.toLowerCase().includes("abort") && !!abortCallback) {
-      const callback = abortCallback
-      callback(e)
-      errorThrown = true
-    }
+      if (error.message?.toLowerCase().includes("abort") && !!abortCallback) {
+        const callback = abortCallback
+        callback(error)
+        errorThrown = true
+      }
 
-    if (e.message?.toLowerCase().includes("security") && !!securityCallback) {
-      const callback = securityCallback
-      callback(e)
-      errorThrown = true
+      if (
+        error.message?.toLowerCase().includes("security") &&
+        !!securityCallback
+      ) {
+        const callback = securityCallback
+        callback(error)
+        errorThrown = true
+      }
     }
 
     // Handle SyntaxErrors
 
     const syntaxCallback = callbacks.client["syntax"]
-    if (e instanceof SyntaxError && !!syntaxCallback) {
-      syntaxCallback(e)
+    if (error instanceof SyntaxError && !!syntaxCallback) {
+      syntaxCallback(error)
       errorThrown = true
     }
 
     if (
-      (e instanceof TypeError ||
+      (error instanceof TypeError ||
         isDOMExceptionError ||
-        e instanceof SyntaxError) &&
+        error instanceof SyntaxError) &&
       !!allFailureCallback
     ) {
       errorThrown = true
-      allFailureCallback(e)
+      allFailureCallback(error)
     }
   }
 
   // Handle specific status errors
 
-  if (e.status && callbacks.status && callbacks.status[e.status]) {
-    const callback = callbacks.status[e.status]
-    callback(e)
+  const isResponse = !(error instanceof Error) && error.status
+
+  if (isResponse && callbacks.status && callbacks.status[error.status]) {
+    const callback = callbacks.status[error.status]
+    callback(error)
     errorThrown = true
   }
 
   // Handle other status errors
 
   if (
-    e.status &&
+    isResponse &&
     callbacks.status &&
-    !callbacks.status[e.status] &&
+    !callbacks.status[error.status] &&
     callbacks.status.other
   ) {
     const callback = callbacks.status.other
-    callback(e)
+    callback(error)
     errorThrown = true
   }
 
   // Handle all status errors
 
-  if (e.status && callbacks.status && callbacks.status.all) {
+  if (isResponse && callbacks.status && callbacks.status.all) {
     const callback = callbacks.status.all
-    callback(e)
+    callback(error)
     errorThrown = true
   }
 
   // Handle any custom field server errors
 
-  Object.keys(e).forEach((key) => {
-    if (key !== "status" && callbacks.body && callbacks.body[key]) {
-      const callback = callbacks.body[key]
-      callback(e, e[key])
-      errorThrown = true
-    }
-  })
+  if (error instanceof Object) {
+    Object.keys(error).forEach((key) => {
+      if (key !== "status" && callbacks.body && callbacks.body[key]) {
+        const callback = callbacks.body[key]
+        callback(error[key as keyof typeof error], error)
+        errorThrown = true
+      }
+    })
+  }
 
   // Handle other errors
   if (!errorThrown && callbacks.other) {
     const callback = callbacks.other
-    callback(e)
+    callback(error)
   }
 
   // Handle all errors
   if (callbacks.all) {
     const callback = callbacks.all
-    callback(e)
+    callback(error)
   }
 }
 
