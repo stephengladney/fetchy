@@ -1,4 +1,4 @@
-import fetchy from "./fetchy"
+import fetchy, { handleError } from "./fetchy"
 
 async function mockResponse(body: any) {
   return new Promise((_, reject) => reject(body))
@@ -11,7 +11,7 @@ describe("fetchy.handleError", () => {
 
     const error = { status: 401 }
 
-    fetchy.handleError(error, {
+    handleError(error, {
       status: { 401: callback401, 409: callback409 },
     })
 
