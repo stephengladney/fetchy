@@ -96,7 +96,7 @@ export type CallbackConfig = {
   all?: (e?: any) => void
 }
 
-function handleError(error: FetchyError, callbacks: CallbackConfig) {
+export function handleError(error: FetchyError, callbacks: CallbackConfig) {
   let errorThrown = false
   // Handle non-server errors
 
