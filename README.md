@@ -256,7 +256,7 @@ _NOTE: If multiple error handling conditions are triggered, each of their callba
 
 ```typescript
 async function getAndGreetUser() {
-  const { data, error } = await fetchy.get("https://api.com/users/1")
+  const [data, error] = await fetchy.get("https://api.com/users/1")
 
   if (data) {
     greetUser(data)
@@ -333,7 +333,7 @@ const myErrorHandlers: CallbackConfig = {
 }
 
 async function someRequest() {
-  const { data, error } = await fetchy.get("https://api.com/users/1")
+  const [data, error] = await fetchy.get("https://api.com/users/1")
 
   if (data) {
     greetUser(data)
@@ -349,7 +349,7 @@ Fetchy works great with Tanstack Query. Below is a popular implementation.
 
 ```typescript
 export async function getUser() {
-  const { data, error } = await fetchy.get("https://api.com/users/1")
+  const [data, error] = await fetchy.get("https://api.com/users/1")
 
   if (data) return data
   else throw error // Throw the error so that it bubbles up to your useQuery hook
