@@ -21,12 +21,14 @@ async function getResponseData<T>(response: Response) {
 async function maybeReturnError<T>(
   response: Response
 ): Promise<FetchyResponse<T>> {
+  const isJsonResponse = response.headers.get("content-type")?.includes("json")
+
   if (response.ok) {
     return [await getResponseData<T>(response), undefined, response]
-  } else {
+  } else if (isJsonResponse) {
     const parsedResponse = await response.json()
     return [undefined, { status: response.status, ...parsedResponse }, response]
-  }
+  } else return [undefined, response, response]
 }
 
 function returnError<T>(response: Response, e: any): FetchyResponse<T> {
